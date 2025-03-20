@@ -888,6 +888,219 @@
   })
 }
 
+// An attempt to get as close as possible to ams latex article class
+// I used in college and gradschool
+#let mnf_ams_article(
+  title: [],
+  authors: (authors, affls),
+  keywords: (),
+  date: auto,
+  bibliography: none,
+  bibliography-opts: (:),
+  appendix: none,
+  doc,
+) = {
+  let (authors, affls) = if authors.len() > 0 { authors } else { ((), ()) }
+
+  // Configure document metadata.
+  set document(
+    title: title,
+    author: format-author-names(authors),
+    keywords: keywords,
+    date: date,
+  )
+
+  set page(
+    paper: "us-letter",
+    margin: (left: 1.5in, right: 1.5in, top: 1.0in, bottom: 1in),
+    footer-descent: 25pt - font.normal,
+  )
+
+  // In the original style, main body font is Times (Type-1) font but we use
+  // OpenType analogue.
+  set par(justify: true, leading: 0.55em)
+  set text(font: font-family, size: font.normal)
+
+  // Configure quotation (similar to LaTeX's `quoting` package).
+  show quote: set align(left)
+  show quote: set pad(x: 4em)
+  show quote: set block(spacing: 1em) // Original 11pt.
+
+  // Configure spacing code snippets as in the original LaTeX.
+  show raw.where(block: true): set block(spacing: 14pt) // TODO: May be 15pt?
+
+  // Configure bullet lists.
+  show list: set block(spacing: 15pt) // Original unknown.
+  set list(
+    indent: 30pt, // Original 3pc (=36pt) without bullet.
+    spacing: 8.5pt,
+  )
+
+  // Configure footnote.
+  set footnote.entry(
+    separator: line(length: 2in, stroke: 0.5pt),
+    clearance: 6.65pt,
+    indent: 12pt,
+  ) // Original 11pt.
+
+  // Configure heading appearence and numbering.
+  set heading(numbering: "1.1")
+  show heading: it => {
+    // Create the heading numbering.
+    let number = if it.numbering != none {
+      counter(heading).display(it.numbering)
+    }
+
+    set align(left)
+    if it.level == 1 {
+      // TODO: font.large?
+      text(
+        size: 12pt,
+        weight: "bold",
+        {
+          let ex = 7.95pt
+          v(2.7 * ex, weak: true)
+          [#number *#it.body*]
+          v(2 * ex, weak: true)
+        },
+      )
+    } else if it.level == 2 {
+      text(
+        size: font.normal,
+        weight: "bold",
+        {
+          let ex = 6.62pt
+          v(2.70 * ex, weak: true)
+          [#number *#it.body*]
+          v(2.03 * ex, weak: true) // Original 1ex.
+        },
+      )
+    } else if it.level == 3 {
+      text(
+        size: font.normal,
+        weight: "bold",
+        {
+          let ex = 6.62pt
+          v(2.6 * ex, weak: true)
+          [#number *#it.body*]
+          v(1.8 * ex, weak: true) // Original -1em.
+        },
+      )
+    }
+  }
+
+  // Configure images and tables appearence.
+  set figure.caption(separator: [:])
+  show figure: set block(breakable: false)
+  show figure.caption.where(kind: table): it => make_figure_caption(it)
+  show figure.caption.where(kind: image): it => make_figure_caption(it)
+  show figure.where(kind: image): it => make_figure(it)
+  show figure.where(kind: table): it => make_figure(it, caption_above: true)
+
+  // Math equation numbering and referencing.
+  set math.equation(numbering: "(1)")
+  show ref: it => {
+    let eq = math.equation
+    let el = it.element
+    if el != none and el.func() == eq {
+      let numb = numbering(
+        "1",
+        ..counter(eq).at(el.location()),
+      )
+      let color = rgb(0%, 8%, 45%) // Originally `mydarkblue`. :D
+      let content = link(el.location(), text(fill: color, numb))
+      [(#content)]
+    } else {
+      return it
+    }
+  }
+
+  // Configure algorithm rendering.
+  counter(figure.where(kind: "algorithm")).update(0)
+  show figure.caption.where(kind: "algorithm"): it => {
+    strong[#it.supplement #it.counter.display(it.numbering)]
+    [ ]
+    it.body
+  }
+  show figure.where(kind: "algorithm"): it => {
+    place(
+      top,
+      float: true,
+      block(
+        breakable: false,
+        width: 100%,
+        {
+          set block(spacing: 0em)
+          line(length: 100%, stroke: (thickness: 0.08em))
+          block(spacing: 0.4em, it.caption) // NOTE: No idea why we need it.
+          line(length: 100%, stroke: (thickness: 0.05em))
+          it.body
+          line(length: 100%, stroke: (thickness: 0.08em))
+        },
+      ),
+    )
+  }
+
+  // Render title.
+  block(
+    width: 5.5in,
+    {
+      // We need to define line widths to reuse them in spacing.
+      let top-rule-width = 4pt
+      let bot-rule-width = 1pt
+
+      // Add some space based on line width.
+      v(0.1in + top-rule-width / 2)
+      // line(length: 100%, stroke: top-rule-width + black)
+      align(center, text(size: 17pt, weight: "bold", [#title]))
+      v(-bot-rule-width)
+      // line(length: 100%, stroke: bot-rule-width + black)
+    },
+  )
+
+  v(0.25in)
+
+  // Render authors.
+  block(
+    width: 100%,
+    {
+      set text(size: font.normal)
+      set par(leading: 4.5pt)
+      set par(spacing: 1.0em) // Original 11pt.
+      make-authors(authors, affls)
+      v(0.3in - 0.1in)
+    },
+  )
+
+  // Vertical spacing between authors and abstract.
+  v(6.5pt) // Original 0.075in.
+
+  // Render main body
+  {
+    // Display body.
+    set text(size: font.normal)
+    set par(leading: 0.55em)
+    set par(leading: 0.43em)
+    set par(spacing: 1.0em) // Original 11pt.
+    doc
+
+    // Display the bibliography, if any is given.
+    if bibliography != none {
+      if "title" not in bibliography-opts {
+        bibliography-opts.title = "References"
+      }
+      if "style" not in bibliography-opts {
+        bibliography-opts.style = "ieee"
+      }
+      // NOTE It is allowed to reduce font to 9pt (small) but there is not
+      // small font of size 9pt in original sty.
+      show std-bibliography: set text(size: font.small)
+      set std-bibliography(..bibliography-opts)
+      bibliography
+    }
+  }
+}
+
 #let (
   theorem,
   lemma,
@@ -902,7 +1115,7 @@
 
 #let mnf(
   title: [],
-  authors: (),
+  authors: (authors, affls),
   keywords: (),
   date: auto,
   abstract: none,
