@@ -1,5 +1,5 @@
 #import "@preview/lemmify:0.1.8": *
-#import "@preview/cetz:0.3.3": canvas, draw, tree
+#import "@preview/cetz:0.3.4": canvas, draw, tree
 #import "@preview/subpar:0.2.1"
 
 
@@ -27,7 +27,8 @@
 )
 
 // We prefer to use Times New Roman when ever it is possible.
-#let font-family = ("Times New Roman", "Nimbus Roman", "TeX Gyre Termes")
+#let font-family = ("Times New Roman",)
+// Some alternatives are ("Nimbus Roman", "TeX Gyre Termes")
 
 #let font = (
   Large: font-defaults.Large,
@@ -134,7 +135,10 @@
   // Render author name.
   let name = format-author-name(author, affl2idx)
   // Render affilations.
-  let affilation = affl.map(it => format-afflilation(affls.at(it))).map(it => box(it)).join(" ")
+  let affilation = affl
+    .map(it => format-afflilation(affls.at(it)))
+    .map(it => box(it))
+    .join(" ")
 
   let lines = (name, affilation)
   if "email" in author {
@@ -149,7 +153,9 @@
 }
 
 #let make-two-authors(authors, affls, affl2idx) = {
-  let row = authors.map(it => make-single-author(it, affls, affl2idx)).map(it => box(it))
+  let row = authors
+    .map(it => make-single-author(it, affls, affl2idx))
+    .map(it => box(it))
   return align(center, grid(columns: (1fr, 1fr), gutter: 2em, ..row))
 }
 
@@ -162,13 +168,19 @@
   }
 
   // Concatenate all author names with affilation superscripts.
-  let names = authors.map(it => format-author-name(it, affl2idx, affilated: true))
+  let names = authors.map(it => format-author-name(
+    it,
+    affl2idx,
+    affilated: true,
+  ))
 
   // Concatenate all affilations with superscripts.
   let affilations = affl2idx.pairs().map(it => format-affl(affls, ..it))
 
   // Concatenate all emails to a single paragraph.
-  let emails = authors.filter(it => "email" in it).map(it => box(link("mailto:" + it.email, raw(it.email))))
+  let emails = authors
+    .filter(it => "email" in it)
+    .map(it => box(link("mailto:" + it.email, raw(it.email))))
 
   // Combine paragraph pieces to single array, then filter and join to
   // paragraphs.
@@ -177,12 +189,9 @@
     .map(it => it.join(h(1em, weak: true)))
     .join([#parbreak() ])
 
-  return align(
-    center,
-    {
-      pad(left: 1em, right: 1em, paragraphs)
-    },
-  )
+  return align(center, {
+    pad(left: 1em, right: 1em, paragraphs)
+  })
 }
 
 #let make-authors(authors, affls) = {
@@ -190,14 +199,11 @@
   let ordered-affls = authors.map(it => it.affl).flatten().dedup()
   let affl2idx = ordered-affls
     .enumerate(start: 1)
-    .fold(
-      (:),
-      (acc, it) => {
-        let (ix, affl) = it
-        acc.insert(affl, ix)
-        return acc
-      },
-    )
+    .fold((:), (acc, it) => {
+      let (ix, affl) = it
+      acc.insert(affl, ix)
+      return acc
+    })
 
   if authors.len() == 1 {
     return make-single-author(authors.at(0), affls, affl2idx)
@@ -227,24 +233,21 @@
   })
 }
 #let make_figure(caption_above: false, it) = {
-  let body = block(
-    width: 100%,
-    {
-      set align(center)
-      set text(size: font.normal)
-      if caption_above {
-        v(1em, weak: true) // Does not work at the block beginning.
-        it.caption
-      }
-      v(1em, weak: true)
-      it.body
-      v(8pt, weak: true) // Original 1em.
-      if not caption_above {
-        it.caption
-        v(1em, weak: true) // Does not work at the block ending.
-      }
-    },
-  )
+  let body = block(width: 100%, {
+    set align(center)
+    set text(size: font.normal)
+    if caption_above {
+      v(1em, weak: true) // Does not work at the block beginning.
+      it.caption
+    }
+    v(1em, weak: true)
+    it.body
+    v(8pt, weak: true) // Original 1em.
+    if not caption_above {
+      it.caption
+      v(1em, weak: true) // Does not work at the block ending.
+    }
+  })
 
   if it.placement == none {
     return body
@@ -252,10 +255,7 @@
     return place(it.placement, body, float: true, clearance: 2.3em)
   }
 }
-#let scr(it) = text(
-  features: ("ss01",),
-  box($cal(it)$),
-)
+#let scr(it) = text(features: ("ss01",), box($cal(it)$))
 
 
 
@@ -364,38 +364,26 @@
     set align(left)
     if it.level == 1 {
       // TODO: font.large?
-      text(
-        size: 12pt,
-        weight: "bold",
-        {
-          let ex = 7.95pt
-          v(2.7 * ex, weak: true)
-          [#number *#it.body*]
-          v(2 * ex, weak: true)
-        },
-      )
+      text(size: 12pt, weight: "bold", {
+        let ex = 7.95pt
+        v(2.7 * ex, weak: true)
+        [#number *#it.body*]
+        v(2 * ex, weak: true)
+      })
     } else if it.level == 2 {
-      text(
-        size: font.normal,
-        weight: "bold",
-        {
-          let ex = 6.62pt
-          v(2.70 * ex, weak: true)
-          [#number *#it.body*]
-          v(2.03 * ex, weak: true) // Original 1ex.
-        },
-      )
+      text(size: font.normal, weight: "bold", {
+        let ex = 6.62pt
+        v(2.70 * ex, weak: true)
+        [#number *#it.body*]
+        v(2.03 * ex, weak: true) // Original 1ex.
+      })
     } else if it.level == 3 {
-      text(
-        size: font.normal,
-        weight: "bold",
-        {
-          let ex = 6.62pt
-          v(2.6 * ex, weak: true)
-          [#number *#it.body*]
-          v(1.8 * ex, weak: true) // Original -1em.
-        },
-      )
+      text(size: font.normal, weight: "bold", {
+        let ex = 6.62pt
+        v(2.6 * ex, weak: true)
+        [#number *#it.body*]
+        v(1.8 * ex, weak: true) // Original -1em.
+      })
     }
   }
 
@@ -413,10 +401,7 @@
     let eq = math.equation
     let el = it.element
     if el != none and el.func() == eq {
-      let numb = numbering(
-        "1",
-        ..counter(eq).at(el.location()),
-      )
+      let numb = numbering("1", ..counter(eq).at(el.location()))
       let color = rgb(0%, 8%, 45%) // Originally `mydarkblue`. :D
       let content = link(el.location(), text(fill: color, numb))
       [(#content)]
@@ -433,74 +418,57 @@
     it.body
   }
   show figure.where(kind: "algorithm"): it => {
-    place(
-      top,
-      float: true,
-      block(
-        breakable: false,
-        width: 100%,
-        {
-          set block(spacing: 0em)
-          line(length: 100%, stroke: (thickness: 0.08em))
-          block(spacing: 0.4em, it.caption) // NOTE: No idea why we need it.
-          line(length: 100%, stroke: (thickness: 0.05em))
-          it.body
-          line(length: 100%, stroke: (thickness: 0.08em))
-        },
-      ),
-    )
+    place(top, float: true, block(breakable: false, width: 100%, {
+      set block(spacing: 0em)
+      line(length: 100%, stroke: (thickness: 0.08em))
+      block(spacing: 0.4em, it.caption) // NOTE: No idea why we need it.
+      line(length: 100%, stroke: (thickness: 0.05em))
+      it.body
+      line(length: 100%, stroke: (thickness: 0.08em))
+    }))
   }
 
   // Render title.
-  block(
-    width: 5.5in,
-    {
-      // We need to define line widths to reuse them in spacing.
-      let top-rule-width = 4pt
-      let bot-rule-width = 1pt
+  block(width: 5.5in, {
+    // We need to define line widths to reuse them in spacing.
+    let top-rule-width = 4pt
+    let bot-rule-width = 1pt
 
-      // Add some space based on line width.
-      v(0.1in + top-rule-width / 2)
-      line(length: 100%, stroke: top-rule-width + black)
-      align(center, text(size: 17pt, weight: "bold", [#title]))
-      v(-bot-rule-width)
-      line(length: 100%, stroke: bot-rule-width + black)
-    },
-  )
+    // Add some space based on line width.
+    v(0.1in + top-rule-width / 2)
+    line(length: 100%, stroke: top-rule-width + black)
+    align(center, text(size: 17pt, weight: "bold", [#title]))
+    v(-bot-rule-width)
+    line(length: 100%, stroke: bot-rule-width + black)
+  })
 
   v(0.25in)
 
   // Render authors.
-  block(
-    width: 100%,
-    {
-      set text(size: font.normal)
-      set par(leading: 4.5pt)
-      set par(spacing: 1.0em) // Original 11pt.
-      make-authors(authors, affls)
-      v(0.3in - 0.1in)
-    },
-  )
+  block(width: 100%, {
+    set text(size: font.normal)
+    set par(leading: 4.5pt)
+    set par(spacing: 1.0em) // Original 11pt.
+    make-authors(authors, affls)
+    v(0.3in - 0.1in)
+  })
 
   // Vertical spacing between authors and abstract.
   v(6.5pt) // Original 0.075in.
 
   // Render abstract.
-  block(
-    width: 100%,
-    {
-      set text(size: 10pt)
-      set text(size: font.normal)
-      set par(leading: 0.43em) // Original 0.55em (or 0.45em?).
+  block(width: 100%, {
+    set text(size: 10pt)
+    set text(size: font.normal)
+    set par(leading: 0.43em) // Original 0.55em (or 0.45em?).
 
-      // NeurIPS instruction tels that font size of `Abstract` must equal to 12pt
-      // but there is not predefined font size.
-      align(center, text(size: 12pt)[*Abstract*])
-      v(0.215em) // Original 0.5ex.
-      pad(left: 0.5in, right: 0.5in, abstract)
-      v(0.43em) // Original 0.5ex.
-    },
-  )
+    // NeurIPS instruction tels that font size of `Abstract` must equal to 12pt
+    // but there is not predefined font size.
+    align(center, text(size: 12pt)[*Abstract*])
+    v(0.215em) // Original 0.5ex.
+    pad(left: 0.5in, right: 0.5in, abstract)
+    v(0.43em) // Original 0.5ex.
+  })
 
   v(0.43em / 2) // No idea.
 
@@ -717,7 +685,9 @@
     // Helper function to check if the graph is bipartite and partition vertices
     let is-bipartite(adj-matrix) = {
       let n = adj-matrix.len()
-      let colors = array.range(n).map(_ => none) // none: uncolored, 0 or 1: bipartite sets
+      let colors = array
+        .range(n)
+        .map(_ => none) // none: uncolored, 0 or 1: bipartite sets
       let queue = (0,) // Start BFS from vertex 0
       colors.at(0) = 0 // Assign vertex 0 to set 0
 
@@ -783,14 +753,18 @@
         let width = 2 // Horizontal separation between sets
 
         // Position set0 on the left (x = -1)
-        let y-step0 = if set0.len() > 1 { height / (set0.len() - 1) } else { 0 }
+        let y-step0 = if set0.len() > 1 { height / (set0.len() - 1) } else {
+          0
+        }
         for (i, v) in set0.enumerate() {
           let y = -height / 2 + i * y-step0
           positions.at(v) = (-width / 2, y)
         }
 
         // Position set1 on the right (x = 1)
-        let y-step1 = if set1.len() > 1 { height / (set1.len() - 1) } else { 0 }
+        let y-step1 = if set1.len() > 1 { height / (set1.len() - 1) } else {
+          0
+        }
         for (i, v) in set1.enumerate() {
           let y = -height / 2 + i * y-step1
           positions.at(v) = (width / 2, y)
@@ -823,7 +797,12 @@
 
     // Draw nodes
     for (i, pos) in node-positions.enumerate() {
-      circle(pos, radius: node-radius, fill: node_color_function(i), stroke: stroke)
+      circle(
+        pos,
+        radius: node-radius,
+        fill: node_color_function(i),
+        stroke: stroke,
+      )
       content(pos, node_label_fn(i), anchor: "center")
     }
   })
@@ -838,7 +817,10 @@
   node_color_function: i => white,
   layout: "circular", // New parameter: "circular" or "bipartite"
   node-radius: 0.45,
+  // edge_label_function (i, j) => content(i,j, [edge #i #j], anchor: "center")
+  edge_label_function: (i_idx, i_pos, j_idx, j_pos) => none,
   stroke: (thickness: 1pt), // Changed to dictionary format
+  radius: none,
 ) = {
   canvas({
     import draw: *
@@ -852,7 +834,13 @@
     // Determine node positions
     let node-positions = if positions == none {
       // Default: Circular layout
-      let radius = calc.max(2, calc.sqrt(n)) / 2 // Adjust radius based on number of nodes
+      let radius = if radius == none {
+        (
+          calc.max(2, calc.sqrt(n)) / 2
+        )
+      } else {
+        (radius)
+      } // Adjust radius based on number of nodes
       let center = (0, 0)
       let positions = ()
       for i in range(n) {
@@ -876,16 +864,78 @@
         // Only upper triangle for undirected graph
         if adj-matrix.at(i).at(j) == 1 {
           line(node-positions.at(i), node-positions.at(j), stroke: 1pt)
+          edge_label_function(i, node-positions.at(i), j, node-positions.at(j))
         }
       }
     }
 
     // Draw nodes
     for (i, pos) in node-positions.enumerate() {
-      circle(pos, radius: node-radius, fill: node_color_function(i), stroke: 1pt)
+      circle(
+        pos,
+        radius: node-radius,
+        fill: node_color_function(i),
+        stroke: 1pt,
+      )
       content(pos, node_label_fn(i), anchor: "center")
     }
   })
+}
+
+/// An experimental thing
+/// Supposed to be EXACTLY like the latex one
+/// rubber-article doesn't do it.
+/// ams-article doesn't do it.
+/// I have to do it.
+/// but the left margin is too far in and
+/// the section numbering is too near to the section title
+#let mnf_hw(title: str, doc) = {
+  let title-page(title: "", author: "", date: none) = {
+    set align(center)
+    set block(spacing: 2em) // Space before title
+    v(9.3em) // Space between title and author
+
+    text(size: 16pt, weight: "thin")[#title]
+    v(1.2em) // Space between title and author
+
+    text(size: 12pt)[#author]
+    v(.9em) // Space between author and date
+
+    text(size: 12pt)[#date]
+    v(1.2em) // Space after date before content
+  }
+
+
+  set text(size: 10pt, font: "New Computer Modern", lang: "en")
+  show raw: set text(size: 10pt, font: "New Computer Modern Mono")
+  // First, adjust your left margin to match LaTeX's actual calculation
+  set page(paper: "us-letter", margin: (
+    left: 47.25mm, // This is the exact LaTeX margin from the log
+    right: 47.5mm, // Balanced margin
+    top: 25.4mm,
+    bottom: 38.1mm,
+  ))
+  // show heading.where(level: 1): set block(above: 1.4em, below: 1.15em)
+  show heading: set block(above: 1.5em, below: 1.1em)
+  // Then, update your heading style to match LaTeX's section indentation
+  set heading(numbering: (..numbers) => {
+    let number = numbers.pos().map(str).join(".")
+    // No additional indentation before the number since we've set the correct margin
+    [#number #h(0.8em)] // Just add the spacing between number and content
+  })
+  set par(
+    leading: 0.55em,
+    spacing: 0.55em,
+    first-line-indent: 1.5em,
+    justify: true,
+  )
+  title-page(
+    title: title,
+    date: datetime.today().display("[month repr:long] [day], [year]"),
+    author: "Michael Newman Fortunato",
+  )
+  set math.equation(numbering: "(1)")
+  doc
 }
 
 // An attempt to get as close as possible to ams latex article class
@@ -898,6 +948,8 @@
   bibliography: none,
   bibliography-opts: (:),
   appendix: none,
+  // Number for the section
+  section_numbering: "1.1",
   doc,
 ) = {
   let (authors, affls) = if authors.len() > 0 { authors } else { ((), ()) }
@@ -944,48 +996,40 @@
   ) // Original 11pt.
 
   // Configure heading appearence and numbering.
-  set heading(numbering: "1.1")
+  set heading(numbering: section_numbering)
   show heading: it => {
     // Create the heading numbering.
     let number = if it.numbering != none {
+      // NOTE: Why display here? Could we not just get the formatted number
+      // TODO: Does this actually display?
       counter(heading).display(it.numbering)
+    } else {
+      none
     }
 
     set align(left)
     if it.level == 1 {
       // TODO: font.large?
-      text(
-        size: 12pt,
-        weight: "bold",
-        {
-          let ex = 7.95pt
-          v(2.7 * ex, weak: true)
-          [#number *#it.body*]
-          v(2 * ex, weak: true)
-        },
-      )
+      text(size: 12pt, weight: "bold", {
+        let ex = 7.95pt
+        v(2.7 * ex, weak: true)
+        [#number *#it.body*]
+        v(2 * ex, weak: true)
+      })
     } else if it.level == 2 {
-      text(
-        size: font.normal,
-        weight: "bold",
-        {
-          let ex = 6.62pt
-          v(2.70 * ex, weak: true)
-          [#number *#it.body*]
-          v(2.03 * ex, weak: true) // Original 1ex.
-        },
-      )
+      text(size: font.normal, weight: "bold", {
+        let ex = 6.62pt
+        v(2.70 * ex, weak: true)
+        [#number *#it.body*]
+        v(2.03 * ex, weak: true) // Original 1ex.
+      })
     } else if it.level == 3 {
-      text(
-        size: font.normal,
-        weight: "bold",
-        {
-          let ex = 6.62pt
-          v(2.6 * ex, weak: true)
-          [#number *#it.body*]
-          v(1.8 * ex, weak: true) // Original -1em.
-        },
-      )
+      text(size: font.normal, weight: "bold", {
+        let ex = 6.62pt
+        v(2.6 * ex, weak: true)
+        [#number *#it.body*]
+        v(1.8 * ex, weak: true) // Original -1em.
+      })
     }
   }
 
@@ -1003,10 +1047,7 @@
     let eq = math.equation
     let el = it.element
     if el != none and el.func() == eq {
-      let numb = numbering(
-        "1",
-        ..counter(eq).at(el.location()),
-      )
+      let numb = numbering("1", ..counter(eq).at(el.location()))
       let color = rgb(0%, 8%, 45%) // Originally `mydarkblue`. :D
       let content = link(el.location(), text(fill: color, numb))
       [(#content)]
@@ -1023,54 +1064,54 @@
     it.body
   }
   show figure.where(kind: "algorithm"): it => {
-    place(
-      top,
-      float: true,
-      block(
-        breakable: false,
-        width: 100%,
-        {
-          set block(spacing: 0em)
-          line(length: 100%, stroke: (thickness: 0.08em))
-          block(spacing: 0.4em, it.caption) // NOTE: No idea why we need it.
-          line(length: 100%, stroke: (thickness: 0.05em))
-          it.body
-          line(length: 100%, stroke: (thickness: 0.08em))
-        },
-      ),
-    )
+    place(top, float: true, block(breakable: false, width: 100%, {
+      set block(spacing: 0em)
+      line(length: 100%, stroke: (thickness: 0.08em))
+      block(spacing: 0.4em, it.caption) // NOTE: No idea why we need it.
+      line(length: 100%, stroke: (thickness: 0.05em))
+      it.body
+      line(length: 100%, stroke: (thickness: 0.08em))
+    }))
   }
 
-  // Render title.
-  block(
-    width: 5.5in,
-    {
-      // We need to define line widths to reuse them in spacing.
-      let top-rule-width = 4pt
-      let bot-rule-width = 1pt
+  let (
+    theorem,
+    lemma,
+    corollary,
+    remark,
+    proposition,
+    definition,
+    example,
+    proof,
+    rules: theorem_rules,
+  ) = default-theorems("theorem_group", lang: "en")
+  show: theorem_rules
 
-      // Add some space based on line width.
-      v(0.1in + top-rule-width / 2)
-      // line(length: 100%, stroke: top-rule-width + black)
-      align(center, text(size: 17pt, weight: "bold", [#title]))
-      v(-bot-rule-width)
-      // line(length: 100%, stroke: bot-rule-width + black)
-    },
-  )
+
+  // Render title.
+  block(width: 5.5in, {
+    // We need to define line widths to reuse them in spacing.
+    let top-rule-width = 4pt
+    let bot-rule-width = 1pt
+
+    // Add some space based on line width.
+    v(0.1in + top-rule-width / 2)
+    // line(length: 100%, stroke: top-rule-width + black)
+    align(center, text(size: 17pt, weight: "bold", [#title]))
+    v(-bot-rule-width)
+    // line(length: 100%, stroke: bot-rule-width + black)
+  })
 
   v(0.25in)
 
   // Render authors.
-  block(
-    width: 100%,
-    {
-      set text(size: font.normal)
-      set par(leading: 4.5pt)
-      set par(spacing: 1.0em) // Original 11pt.
-      make-authors(authors, affls)
-      v(0.3in - 0.1in)
-    },
-  )
+  block(width: 100%, {
+    set text(size: font.normal)
+    set par(leading: 4.5pt)
+    set par(spacing: 1.0em) // Original 11pt.
+    make-authors(authors, affls)
+    v(0.3in - 0.1in)
+  })
 
   // Vertical spacing between authors and abstract.
   v(6.5pt) // Original 0.075in.
@@ -1101,17 +1142,6 @@
   }
 }
 
-#let (
-  theorem,
-  lemma,
-  corollary,
-  remark,
-  proposition,
-  definition,
-  example,
-  proof,
-  rules: theorem_rules,
-) = default-theorems("theorem_group", lang: "en")
 
 #let mnf(
   title: [],
@@ -1147,7 +1177,7 @@
     proof,
     rules: theorem_rules,
   ) = default-theorems("theorem_group", lang: "en")
-
   #show: theorem_rules
+
   #doc
 ]
